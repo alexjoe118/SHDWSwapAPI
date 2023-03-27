@@ -1,6 +1,11 @@
 const express = require('express')
 const { GraphQLClient, gql } = require('graphql-request')
 
+function addIPFSProxy(ipfsHash) {
+  const ipfsURL = ipfsHash.replace(/^ipfs?:\/\//, 'https://ipfs.io/ipfs/')
+  return ipfsURL
+}
+
 const queryNft = gql`
 query getAccountNfts($id: ID, $skip: Int) {
   accounts(where: {id: $id}) {    
@@ -18,7 +23,7 @@ query getAccountNfts($id: ID, $skip: Int) {
 
 const queryCollection = gql`
 query allCollections($skip: Int) {
-  collections(first: 100, skip: $skip) {
+  collections(first: 20, skip: $skip) {
     id
     mintPrice
     name
@@ -55,12 +60,21 @@ app.get('/nfts', async (req, res) => {
       { id: req.query.address.toLowerCase(), skip })
   
     data.accounts.map(acc => {
-      acc.tokens.map(token => {
+      acc.tokens.map(async (token) => {
         const tokenObj = {}
         tokenObj.id = token.id.split('/')[2]
         tokenObj.name = token.collection.name
         tokenObj.symbol = token.collection.symbol
         tokenObj.ca = token.collection.id
+        const tokenURI = token.collection.tokenURI
+        const ipfsURL = addIPFSProxy(tokenURI);
+
+        const request = new Request(ipfsURL);
+        const response = await fetch(request);
+        const metadata = await response.json();
+        const image = addIPFSProxy(metadata.image);
+        tokenObj.img = image
+
         nftArr.push(tokenObj)
       })
     })    
