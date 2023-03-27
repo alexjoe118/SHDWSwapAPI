@@ -11,6 +11,7 @@ query getAccountNfts($id: ID, $skip: Int) {
   accounts(where: {id: $id}) {    
     tokens(first: 100, skip: $skip) {
       id
+      tokenURI
       collection {
         id
         name
@@ -58,26 +59,25 @@ app.get('/nfts', async (req, res) => {
 
     const data = await graphQLClient.request(queryNft,
       { id: req.query.address.toLowerCase(), skip })
-  
-    data.accounts.map(acc => {
-      acc.tokens.map(async (token) => {
+      
+    if(data.accounts.length > 0 && data.accounts[0].tokens.length > 0){
+      for(let i = 0; i < data.accounts[0].tokens.length; i++){
+        const token = data.accounts[0].tokens[i];
         const tokenObj = {}
         tokenObj.id = token.id.split('/')[2]
         tokenObj.name = token.collection.name
         tokenObj.symbol = token.collection.symbol
         tokenObj.ca = token.collection.id
-        const tokenURI = token.collection.tokenURI
+        const tokenURI = token.tokenURI
         const ipfsURL = addIPFSProxy(tokenURI);
-
         const request = new Request(ipfsURL);
         const response = await fetch(request);
         const metadata = await response.json();
         const image = addIPFSProxy(metadata.image);
         tokenObj.img = image
-
         nftArr.push(tokenObj)
-      })
-    })    
+      }
+    }
   } catch (error) {
     console.log(error);
   }
