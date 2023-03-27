@@ -36,7 +36,7 @@ query allCollections($skip: Int) {
   }
 }`;
 
-const endpoint = 'http://162.0.216.193:8000/subgraphs/name/chiano/listnfts'
+const endpoint = 'http://162.0.216.193:8000/subgraphs/name/shadowswap/listnfts'
 const graphQLClient = new GraphQLClient(endpoint)
 
 
